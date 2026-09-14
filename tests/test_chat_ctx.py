@@ -13,6 +13,7 @@ from livekit.agents.llm import (
     FunctionCallOutput,
     utils,
 )
+from livekit.agents.llm.chat_context import _ReadOnlyChatContext
 from livekit.agents.types import (
     DEFAULT_API_CONNECT_OPTIONS,
     NOT_GIVEN,
@@ -964,3 +965,37 @@ def test_to_provider_format_non_object_tool_arguments(fmt: str, arguments: str):
 
     messages, _ = ctx.to_provider_format(format=fmt)
     assert _tool_call_input(fmt, messages) == {}
+
+
+def test_read_only_chat_context_blocks_every_mutation():
+    """`Agent.chat_ctx` hands out a read-only view; nothing may mutate it silently.
+
+    `_ImmutableList` overrode every mutating list method but `insert`, and the `items`
+    setter was inherited unchanged. `ChatContext.insert`/`merge`/`_upsert_item` go
+    through exactly those two, so mutating a read-only view looked like it worked while
+    the agent's own context stayed untouched.
+    """
+    ctx = _ReadOnlyChatContext([ChatMessage(role="user", content=["hi"], id="m1")])
+    other = ChatContext([ChatMessage(role="assistant", content=["yo"], id="m2")])
+
+    with pytest.raises(RuntimeError, match="read-only"):
+        ctx.insert(ChatMessage(role="assistant", content=["yo"], id="m2"))
+
+    with pytest.raises(RuntimeError, match="read-only"):
+        ctx.merge(other)
+
+    with pytest.raises(RuntimeError, match="read-only"):
+        ctx.items = []
+
+    assert [item.id for item in ctx.items] == ["m1"]
+
+
+def test_read_only_chat_context_merges_through_copy():
+    """`.copy()` is the documented way out, and it must stay usable."""
+    ctx = _ReadOnlyChatContext([ChatMessage(role="user", content=["hi"], id="m1")])
+    other = ChatContext([ChatMessage(role="assistant", content=["yo"], id="m2")])
+
+    merged = ctx.copy().merge(other)
+
+    assert [item.id for item in merged.items] == ["m1", "m2"]
+    assert not merged.readonly

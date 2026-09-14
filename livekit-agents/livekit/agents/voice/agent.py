@@ -1091,7 +1091,8 @@ class AgentTask(Agent, Generic[TaskResult_T]):
                     )
                     await old_activity.aclose()
                 else:
-                    merged_chat_ctx = old_agent.chat_ctx.merge(
+                    # chat_ctx is a read-only view: merge into a mutable copy
+                    merged_chat_ctx = old_agent.chat_ctx.copy().merge(
                         self.chat_ctx,
                         exclude_function_call=not self._preserve_function_call_history,
                         exclude_instructions=True,
