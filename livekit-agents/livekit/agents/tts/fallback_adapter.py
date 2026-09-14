@@ -250,7 +250,16 @@ class FallbackChunkedStream(ChunkedStream):
 
         except Exception as e:
             if recovering:
-                logger.warning("%s recovery failed: %s", tts.label, e, extra={"streamed": False})
+                # the error can quote the synthesized text: a log body cannot be redacted
+                logger.warning(
+                    "tts recovery failed",
+                    extra={
+                        "tts": tts.label,
+                        "streamed": False,
+                        "error_type": type(e).__name__,
+                        "lk.pii.error": str(e),
+                    },
+                )
                 raise
 
             logger.warning(
@@ -418,11 +427,15 @@ class FallbackSynthesizeStream(SynthesizeStream):
                     yield audio
         except Exception as e:
             if recovering:
+                # the error can quote the synthesized text: a log body cannot be redacted
                 logger.warning(
-                    "%s recovery failed: %s",
-                    tts.label,
-                    e,
-                    extra={"streamed": True},
+                    "tts recovery failed",
+                    extra={
+                        "tts": tts.label,
+                        "streamed": True,
+                        "error_type": type(e).__name__,
+                        "lk.pii.error": str(e),
+                    },
                 )
                 raise
 

@@ -437,6 +437,8 @@ class ChunkedStream(ABC):
                         "attempt": i + 1,
                         "streamed": False,
                         "retry_interval": retry_interval,
+                        # the class name is safe and survives redaction, unlike the message
+                        "error_type": type(e).__name__,
                         "lk.pii.error": str(e),
                     },
                 )
@@ -657,6 +659,8 @@ class SynthesizeStream(ABC):
                         "attempt": i + 1,
                         "streamed": True,
                         "retry_interval": retry_interval,
+                        # the class name is safe and survives redaction, unlike the message
+                        "error_type": type(e).__name__,
                         "lk.pii.error": str(e),
                     },
                 )
