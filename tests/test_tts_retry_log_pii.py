@@ -20,7 +20,7 @@ from livekit.agents.telemetry import pii
 
 from .fake_tts import FakeTTS
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.virtual_time]
 
 SYNTHESIZED_TEXT = "your card number is 4111 1111 1111 1111"
 
